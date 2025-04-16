@@ -7,7 +7,6 @@ public class ComponentPoint {
     private String diemChu;
     private String tenKiHoc;
     private int nam;
-
     public ComponentPoint(String tenMH, float diemGiuaKy, float diemCuoiKy,
                           float diemTrungBinh, String diemChu, String tenKiHoc, int nam) {
         this.tenMH = tenMH;
@@ -18,7 +17,6 @@ public class ComponentPoint {
         this.tenKiHoc = tenKiHoc;
         this.nam = nam;
     }
-
     public String getTenKiHoc() {
         return tenKiHoc;
     }

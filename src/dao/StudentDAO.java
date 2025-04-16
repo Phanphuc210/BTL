@@ -70,7 +70,7 @@ public class StudentDAO {
 
 
     public void guiPhucKhao(Review yc) {
-        String sql = "INSERT INTO tblPhucKhaoChuaXL (maSV, tblKetQuaId, noiDung) VALUES (?, ?, ?);";
+        String sql = "INSERT INTO tblPhucKhao (maSV, tblKetQuaId, noiDungPK) VALUES (?, ?, ?);";
         try (Connection connection = DatabaseConnect.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, yc.getMaSV());
@@ -88,50 +88,41 @@ public class StudentDAO {
         String sql = """
                 WITH DiemTongKet AS (
                     SELECT
-                        kh.id AS KiHocId,\s
+                        kh.id AS kiHocId,
                         kh.tenKiHoc,
                         lhp.namHoc,
+                        mh.id AS monHocId,
                         mh.soTc,
-                        SUM(kq.diem * mhdd.heSo) / SUM(mhdd.heSo) AS DiemTongKet
-                    FROM\s
-                        tblThanhVien sv\s
-                        JOIN tblThamGia tg ON sv.id = tg.tblThanhVienid\s
-                        JOIN tblLopHocPhan lhp ON tg.tblLopHocPhanid = lhp.id
-                        JOIN tblKiHoc kh ON lhp.tblKiHocid = kh.id\s
-                        JOIN tblMonHoc mh ON lhp.tblMonHocid = mh.id\s
-                        JOIN tblKetQua kq ON tg.id = kq.tblThamGiaid\s
-                        JOIN tblMonHocDauDiem mhdd ON kq.tblMonHocDauDiemid = mhdd.id AND mhdd.tblMonHocid = mh.id\s
-                    WHERE\s
-                        sv.maSV = ?\s
-                    GROUP BY\s
-                        kh.id, kh.tenKiHoc, lhp.namHoc, mh.soTc, mh.id\s
-                ),\s
-                DiemChuyenDoi AS (\s
-                    SELECT\s
-                        KiHocId,\s
-                        tenKiHoc,\s
-                        namHoc,\s
-                        soTc,\s
-                        CASE
-                            WHEN DiemTongKet >= 9.5 THEN 4.0
-                            WHEN DiemTongKet >= 8.5 THEN 3.7
-                            WHEN DiemTongKet >= 8.0 THEN 3.5
-                            WHEN DiemTongKet >= 7.0 THEN 3.0
-                            WHEN DiemTongKet >= 6.5 THEN 2.5\s
-                            WHEN DiemTongKet >= 5.5 THEN 2.0
-                            WHEN DiemTongKet >= 5.0 THEN 1.5\s
-                            WHEN DiemTongKet >= 4.0 THEN 1.0
-                            ELSE 0.0
-                        END AS DiemHe4\s
-                    FROM DiemTongKet\s
-                )\s
-                SELECT\s
+                        SUM(kq.diem * mhdd.heSo) / SUM(mhdd.heSo) AS diemTongKet
+                    FROM tblThanhVien sv
+                    JOIN tblThamGia tg ON sv.id = tg.tblThanhVienid
+                    JOIN tblLopHocPhan lhp ON tg.tblLopHocPhanid = lhp.id
+                    JOIN tblKiHoc kh ON lhp.tblKiHocid = kh.id
+                    JOIN tblMonHoc mh ON lhp.tblMonHocid = mh.id
+                    JOIN tblKetQua kq ON kq.tblThamGiaid = tg.id
+                    JOIN tblMonHocDauDiem mhdd ON kq.tblMonHocDauDiemid = mhdd.id AND mhdd.tblMonHocid = mh.id
+                    WHERE sv.maSV = ?
+                    GROUP BY kh.id, mh.id, mh.soTc, kh.tenKiHoc, lhp.namHoc
+                ),
+                DiemChuyenDoi AS (
+                    SELECT
+                        dt.kiHocId,
+                        dt.tenKiHoc,
+                        dt.namHoc,
+                        dt.soTc,
+                        dc.diemthang4 AS diemHe4
+                    FROM DiemTongKet dt
+                    JOIN tblDiemChu dc
+                        ON dt.diemTongKet >= dc.diemHe10ToiThieu AND dt.diemTongKet < dc.diemHe10ToiDa
+                )
+                SELECT
                     tenKiHoc AS Ky_hoc,
-                    namHoc AS Nam_hoc,\s
-                    ROUND(SUM(DiemHe4 * soTc) / SUM(soTc), 2) AS GPA\s
-                FROM DiemChuyenDoi\s
-                GROUP BY KiHocId, tenKiHoc, namHoc\s
-                ORDER BY namHoc, KiHocId""";
+                    namHoc AS Nam_hoc,
+                    ROUND(SUM(diemHe4 * soTc) / SUM(soTc), 2) AS GPA
+                FROM DiemChuyenDoi
+                GROUP BY kiHocId, tenKiHoc, namHoc
+                ORDER BY namHoc, kiHocId;
+                """;
 
         try (Connection connection = DatabaseConnect.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -179,7 +170,7 @@ public class StudentDAO {
                         String tenMH = resultSet.getString("tenMH");
                         String tenDauDiem = resultSet.getString("tenDauDiem");
                         float diem = resultSet.getFloat("diem");
-                        diemList.add(new Diem(kqID, tenMH, tenDauDiem, diem));
+                        diemList.add(new Diem(kqID, tenMH, kyHoc, nam, tenDauDiem, diem));
                     }
                 }
             }
@@ -204,33 +195,28 @@ public class StudentDAO {
         }
         return false;
     }
-    public List<Review> layDanhSachPhucKhao(String tableName, String maSV) {
+    public List<Review> layDanhSachPhucKhao(String maSV, String trangThai) {
         List<Review> reviewList = new ArrayList<>();
-        String sql = "SELECT * FROM " + tableName + " WHERE maSV = ?";
+        String sql = "SELECT * FROM tblPhucKhao WHERE maSV = ? and trangThaiXL = ?";
 
         try (Connection connection = DatabaseConnect.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
 
             statement.setString(1, maSV);
+            statement.setString(2, trangThai);
             ResultSet resultSet = statement.executeQuery();
 
             while (resultSet.next()) {
                 int id = resultSet.getInt("id");
                 String mSV = resultSet.getString("maSV");
                 int thamGiaID = resultSet.getInt("tblKetQuaId");
-
-                if (tableName.equalsIgnoreCase("tblPhucKhaoDaXL")) {
                     String ndPK = resultSet.getString("noiDungPK");
                     String ndXL = resultSet.getString("noiDungXL");
                     reviewList.add(new Review(id, mSV, thamGiaID, ndPK, ndXL));
-                } else {
-                    String nd = resultSet.getString("noiDung");
-                    reviewList.add(new Review(id, mSV, thamGiaID, nd));
-                }
             }
 
         } catch (SQLException e) {
-            throw new RuntimeException("Lỗi khi lấy danh sách phản hồi từ " + tableName + ": " + e.getMessage());
+            throw new RuntimeException("Lỗi khi lấy danh sách phản hồi từ: " + e.getMessage());
         }
 
         return reviewList;

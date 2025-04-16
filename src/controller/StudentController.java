@@ -61,9 +61,9 @@ public class StudentController {
         studentView.hienThiDiemMH(studentDAO.getIDbyDiem(maSV, kyHoc, nam));
     }
     public void xemPKCXL(String maSV){
-        studentView.showPHCT(studentDAO.layDanhSachPhucKhao("tblPhucKhaoChuaXL", maSV));
+        studentView.showPHCT(studentDAO.layDanhSachPhucKhao(maSV, "Chưa xử lý"));
     }
     public void xemPKDXL(String maSV){
-        studentView.showPHCT(studentDAO.layDanhSachPhucKhao("tblPhucKhaoDaXL", maSV));
+        studentView.showPHCT(studentDAO.layDanhSachPhucKhao(maSV, "Đã xử lý"));
     }
 }

@@ -81,21 +81,13 @@ CREATE TABLE tblDiemChu (
     diemHe10ToiDa FLOAT
 );
 
-CREATE TABLE tblPhucKhaoChuaXL (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    maSV VARCHAR(255),
-    tblKetQuaId INT,
-    noiDung VARCHAR(500),
-    FOREIGN KEY (tblKetQuaId) REFERENCES tblKetQua(id),
-	FOREIGN KEY (maSV) REFERENCES tblThanhVien(maSV)
-);
-
-CREATE TABLE tblPhucKhaoDaXL (
+CREATE TABLE tblPhucKhao (
     id INT PRIMARY KEY AUTO_INCREMENT,
     maSV VARCHAR(255),
     tblKetQuaId INT,
     noiDungPK VARCHAR(500),
-    noiDungXL VARCHAR(500),
+    noiDungXL VARCHAR(500) DEFAULT 'Chưa xử lý',
+    trangThaiXL VARCHAR(50) DEFAULT 'Chưa xử lý',
     FOREIGN KEY (tblKetQuaId) REFERENCES tblKetQua(id),
     FOREIGN KEY (maSV) REFERENCES tblThanhVien(maSV)
 );
@@ -161,14 +153,17 @@ INSERT INTO tblDiemChu (diemChu, diemHe10ToiThieu, diemHe10ToiDa) VALUES
 ('C+', 6.5, 7.0), ('C', 5.5, 6.5), ('D+', 5.0, 5.5), ('D', 4.0, 5.0),
 ('F', 0.0, 4.0);
 
-INSERT INTO tblPhucKhaoChuaXL (maSV, tblKetQuaId, noiDung)
+-- Thêm phúc khảo chưa xử lý
+INSERT INTO tblPhucKhao (maSV, tblKetQuaId, noiDungPK)
 VALUES
 ('SV001', 1, 'Em thấy điểm giữa kỳ môn Toán cao cấp chưa chính xác, xin được xem lại.'),
 ('SV001', 3, 'Điểm cuối kỳ môn Cấu trúc dữ liệu có thể bị nhầm, em muốn phúc khảo.'),
 ('SV001', 10, 'Em nghĩ bài thi cuối kỳ môn Hệ điều hành chấm thiếu, xin kiểm tra lại.');
 
-INSERT INTO tblPhucKhaoDaXL (maSV, tblKetQuaId, noiDungPK, noiDungXL)
+-- Thêm phúc khảo đã xử lý
+INSERT INTO tblPhucKhao (maSV, tblKetQuaId, noiDungPK, noiDungXL, trangThaiXL)
 VALUES
-('SV001', 2, 'Xin phúc khảo bài giữa kỳ môn Lập trình Java.', 'Đã kiểm tra, điểm đúng, không thay đổi.'),
-('SV001', 5, 'Điểm cuối kỳ môn Cơ sở dữ liệu không đúng với bài làm.', 'Chấm lại, điểm điều chỉnh từ 6.0 lên 7.0.'),
-('SV001', 8, 'Em thấy điểm giữa kỳ môn Mạng máy tính thấp bất thường.', 'Kiểm tra lại, điểm đúng, không thay đổi.');
+('SV001', 2, 'Xin phúc khảo bài giữa kỳ môn Lập trình Java.', 'Đã kiểm tra, điểm đúng, không thay đổi.', 'Đã xử lý'),
+('SV001', 5, 'Điểm cuối kỳ môn Cơ sở dữ liệu không đúng với bài làm.', 'Chấm lại, điểm điều chỉnh từ 6.0 lên 7.0.', 'Đã xử lý'),
+('SV001', 8, 'Em thấy điểm giữa kỳ môn Mạng máy tính thấp bất thường.', 'Kiểm tra lại, điểm đúng, không thay đổi.', 'Đã xử lý');
+

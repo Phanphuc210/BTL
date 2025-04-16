@@ -1,4 +1,5 @@
 package view;
+import model.Diem;
 import model.Review;
 
 import java.util.List;
@@ -73,8 +74,9 @@ public class HandleView {
         System.out.print("""
                 1. Xem Phản Hồi Cơn Bản
                 2. Xem Phản Hồi Chi Tiết
-                3. Sửa Điểm
-                4. Xác Nhận Phản Hồi Đã Xử Lý
+                3. Xem Điểm Bị Phản Hồi
+                4. Sửa Điểm
+                5. Xác Nhận Phản Hồi Đã Xử Lý
                 0. Thoát
                 Chọn:\s""");
         return Integer.parseInt(sc.nextLine());
@@ -95,6 +97,10 @@ public class HandleView {
     }
     public void showPHCT(Review review) {
         System.out.printf("IDPH: %d ,Mã SV: %s, Kết Quả ID: %d\nNội Dung: %s \nNội Dung Xử Lý: %s\n%n", review.getIdPhanHoi(), review.getMaSV(), review.getIDKetQua(), review.getNoiDungPK(), review.getNoiDungXl());
+    }
+    public void showDiem(Diem diem){
+        System.out.println("|  ID  |           Môn Học          |  Đầu Điểm  |  Năm  |  Kỳ Học  |  Điểm  |");
+        System.out.println(diem);
     }
     public void errorChoose() {
         printOut("Nhập lại lựa chọn của bạn\n");

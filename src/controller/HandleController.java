@@ -31,29 +31,46 @@ public class HandleController {
     public void xemPHCXL() {
         while (true) {
             int choose = handleView.ViewPhanHoiChuaXL();
+            int idPH, idKQ;
             switch (choose) {
                 case 1:
                     xemPHCB(handleDAO.layPhucKhaoCXL());
                     break;
                 case 2:
-                    int id;
                     while (true) {
-                        id = handleView.inputIDPH();
-                        if (!handleDAO.checkIDPH(id, "tblPhucKhaoChuaXL")) {
+                        idPH = handleView.inputIDPH();
+                        if (!handleDAO.checkIDPH(idPH, "Chưa xử lý")) {
                             handleView.checkIDKQ();
                             continue;
                         }
                         break;
                     }
-
-                    Review review = handleDAO.layPHTheoID(id, "tblPhucKhaoChuaXL");
+                    Review review = handleDAO.layPHTheoID(idPH, "Chưa xử lý");
                     xemPHCT(review);
                     break;
                 case 3:
-                    suaDiem();
+                    while (true) {
+                        idPH = handleView.inputIDPH();
+                        Review phucKhao = handleDAO.layPHTheoID(idPH, "Chưa xử lý");
+                        if (phucKhao != null) {
+                            idKQ = phucKhao.getIDKetQua();
+                            break;
+                        }
+                        handleView.checkIDKQ();
+                    }
+                    xemDiemPH(idKQ);
                     break;
                 case 4:
-                    int idPH = handleView.inputIDPH();
+                    suaDiem();
+                    break;
+                case 5:
+                    while (true) {
+                        idPH = handleView.inputIDPH();
+                        if (handleDAO.checkIDPH(idPH, "Chưa xử lý")) {
+                            break;
+                        }
+                        handleView.checkIDKQ();
+                    }
                     String noiDung = handleView.inputND();
                     xacNhanXL(idPH, noiDung);
                     break;
@@ -76,13 +93,13 @@ public class HandleController {
                     int id;
                     while (true) {
                         id = handleView.inputIDPH();
-                        if (!handleDAO.checkIDPH(id, "tblPhucKhaoDaXL")) {
+                        if (!handleDAO.checkIDPH(id, "Đã xử lý")) {
                             handleView.checkIDKQ();
                             continue;
                         }
                         break;
                     }
-                    Review review = handleDAO.layPHTheoID(id, "tblPhucKhaoDaXL");
+                    Review review = handleDAO.layPHTheoID(id, "Đã xử lý");
                     xemPHCT(review);
                     break;
                 case 0:
@@ -100,7 +117,9 @@ public class HandleController {
     public void xemPHCT(Review review) {
         handleView.showPHCT(review);
     }
-
+    public void xemDiemPH(int idKQ){
+        handleView.showDiem(handleDAO.layDiemByID(idKQ));
+    }
     public void suaDiem() {
         int idKQ;
         while (true) {

@@ -100,7 +100,7 @@ public class StudentView {
         if (diemList.isEmpty()) {
             System.out.println("Không Có Điểm Thành Phần Nào Thuộc Kỳ Này");
         } else {
-            System.out.println("|  ID  |           Môn Học          |  Đầu Điểm  | Điểm |");
+            System.out.println("|  ID  |           Môn Học          |  Đầu Điểm  |  Năm  |  Kỳ Học  |  Điểm  |");
             for (Diem diem : diemList) {
                 System.out.println(diem);
             }

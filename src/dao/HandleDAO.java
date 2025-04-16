@@ -1,73 +1,102 @@
 package dao;
 
+import model.ComponentPoint;
+import model.Diem;
 import model.Review;
 
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
+
 public class HandleDAO {
 
-    private List<Review> layDanhSachPhucKhao(String tableName, boolean daXuLy) {
+    public static final String TRANG_THAI_CHUA_XL = "Chưa xử lý";
+    public static final String TRANG_THAI_DA_XL = "Đã xử lý";
+
+    private Review mapToReview(ResultSet rs) throws SQLException {
+        int id = rs.getInt("id");
+        String maSV = rs.getString("maSV");
+        int thamGiaID = rs.getInt("tblKetQuaId");
+        String ndPK = rs.getString("noiDungPK");
+        String ndXL = rs.getString("noiDungXL");
+        return new Review(id, maSV, thamGiaID, ndPK, ndXL);
+    }
+
+    private List<Review> layDanhSachPhucKhao(String trangThaiXL) {
         List<Review> reviewList = new ArrayList<>();
-        String sql = "SELECT * FROM " + tableName;
+        String sql = "SELECT * FROM tblPhucKhao WHERE trangThaiXL = ?";
         try (Connection connection = DatabaseConnect.getConnection();
-             Statement statement = connection.createStatement();
-             ResultSet resultSet = statement.executeQuery(sql)) {
-
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, trangThaiXL);
+            ResultSet resultSet = statement.executeQuery();
             while (resultSet.next()) {
-                int id = resultSet.getInt("id");
-                String maSV = resultSet.getString("maSV");
-                int thamGiaID = resultSet.getInt("tblKetQuaId");
-
-                if (daXuLy) {
-                    String ndPK = resultSet.getString("noiDungPK");
-                    String ndXL = resultSet.getString("noiDungXL");
-                    reviewList.add(new Review(id, maSV, thamGiaID, ndPK, ndXL));
-                } else {
-                    String nd = resultSet.getString("noiDung");
-                    reviewList.add(new Review(id, maSV, thamGiaID, nd));
-                }
+                reviewList.add(mapToReview(resultSet));
             }
 
         } catch (SQLException e) {
-            throw new RuntimeException("Lỗi khi lấy danh sách phản hồi từ " + tableName + ": " + e.getMessage());
+            throw new RuntimeException("Lỗi khi lấy danh sách phản hồi: " + e.getMessage());
         }
         return reviewList;
     }
 
     public List<Review> layPhucKhaoCXL() {
-        return layDanhSachPhucKhao("tblPhucKhaoChuaXL", false);
+        return layDanhSachPhucKhao(TRANG_THAI_CHUA_XL);
     }
 
     public List<Review> layPhucKhaoDXL() {
-        return layDanhSachPhucKhao("tblPhucKhaoDaXL", true);
+        return layDanhSachPhucKhao(TRANG_THAI_DA_XL);
     }
 
-    public Review layPHTheoID(int id, String nameTbl) {
-        String sql = "SELECT * FROM " + nameTbl + " WHERE id = ?";
+    public Review layPHTheoID(int id, String trangThai) {
+        String sql = "SELECT * FROM tblPhucKhao WHERE id = ? and trangThaiXL = ?";
         try (Connection connection = DatabaseConnect.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
-
             statement.setInt(1, id);
+            statement.setString(2, trangThai);
             ResultSet rs = statement.executeQuery();
 
             if (rs.next()) {
-                String maSV = rs.getString("maSV");
-                int idKetQua = rs.getInt("tblKetQuaId");
-
-                if (nameTbl.equals("tblPhucKhaoDaXL")) {
-                    String noiDungPK = rs.getString("noiDungPK");
-                    String noiDungXL = rs.getString("noiDungXL");
-                    return new Review(id, maSV, idKetQua, noiDungPK, noiDungXL);
-                } else {
-                    String noiDung = rs.getString("noiDung");
-                    return new Review(id, maSV, idKetQua, noiDung);
-                }
+                return mapToReview(rs);
             }
-
         } catch (SQLException e) {
             throw new RuntimeException("Lỗi lấy thông tin phản hồi: " + e.getMessage());
+        }
+        return null;
+    }
+
+    public Diem layDiemByID(int id) {
+        String sql = """
+                SELECT\s
+                    kq.id,
+                    m.tenMH AS 'Môn Học',
+                    k.tenKiHoc AS 'Kỳ Học',
+                    lhp.namHoc AS 'Năm Học',
+                    d.tenDauDiem AS 'Đầu Điểm',
+                    kq.diem AS 'Điểm'
+                FROM tblKetQua kq
+                JOIN tblMonHocDauDiem d ON d.id = kq.tblMonHocDauDiemid
+                JOIN tblThamGia tg ON tg.id = kq.tblThamGiaid
+                JOIN tblLopHocPhan lhp ON lhp.id = tg.tblLopHocPhanid
+                JOIN tblMonHoc m ON m.id = lhp.tblMonHocid
+                JOIN tblKiHoc k ON k.id = lhp.tblKiHocid
+                WHERE kq.id = ?;""";
+        try (Connection connection = DatabaseConnect.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, id);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    int idKQ = resultSet.getInt("id");
+                    String tenMH = resultSet.getString("Môn Học");
+                    String tenKiHoc = resultSet.getString("Kỳ Học");
+                    int namHoc = resultSet.getInt("Năm Học");
+                    String tenDauDiem = resultSet.getString("Đầu Điểm");
+                    float diem = resultSet.getFloat("Điểm");
+                    return new Diem(idKQ, tenMH, tenKiHoc, namHoc, tenDauDiem, diem);
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Lỗi Lấy Điểm " + e.getMessage());
         }
         return null;
     }
@@ -87,47 +116,41 @@ public class HandleDAO {
     }
 
     public void xacNhanPH(int id, String noiDungXL) {
-        Review review = layPHTheoID(id, "tblPhucKhaoChuaXL");
-        if (review == null) {
-            throw new RuntimeException("Không tìm thấy phản hồi có ID: " + id);
-        }
-
-        String sql1 = "DELETE FROM tblPhucKhaoChuaXL WHERE ID = ?";
-        String sql2 = "INSERT INTO tblPhucKhaoDaXL (maSV, tblKetQuaId, noiDungPK, noiDungXL) VALUES (?, ?, ?, ?)";
+        String sql = "UPDATE tblPhucKhao SET noiDungXL = ?, trangThaiXL = ? WHERE id = ? AND trangThaiXL = ?";
 
         try (Connection connection = DatabaseConnect.getConnection();
-             PreparedStatement statement1 = connection.prepareStatement(sql1);
-             PreparedStatement statement2 = connection.prepareStatement(sql2)) {
+             PreparedStatement statement = connection.prepareStatement(sql)) {
 
-            statement1.setInt(1, id);
-            statement1.executeUpdate();
+            statement.setString(1, noiDungXL);
+            statement.setString(2, TRANG_THAI_DA_XL);
+            statement.setInt(3, id);
+            statement.setString(4, TRANG_THAI_CHUA_XL);
 
-            statement2.setString(1, review.getMaSV());
-            statement2.setInt(2, review.getIDKetQua());
-            statement2.setString(3, review.getNoiDungPK());
-            statement2.setString(4, noiDungXL);
-            statement2.executeUpdate();
+            int rowsAffected = statement.executeUpdate();
+
+            if (rowsAffected == 0) {
+                throw new RuntimeException("Không tìm thấy phản hồi chưa xử lý với ID: " + id);
+            }
 
         } catch (SQLException e) {
             throw new RuntimeException("Lỗi khi xác nhận phản hồi: " + e.getMessage());
         }
     }
-    public boolean checkIDPH(int id, String nameTBL) {
-        return layPHTheoID(id, nameTBL) != null;
+
+    public boolean checkIDPH(int id, String trangThaiXL) {
+        return layPHTheoID(id, trangThaiXL) != null;
     }
-    public boolean checkIDKQ(int idKQ){
+
+    public boolean checkIDKQ(int idKQ) {
         String sql = "SELECT * FROM tblKetQua WHERE ID = ?";
         try (Connection connection = DatabaseConnect.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)){
+             PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, idKQ);
-            try (ResultSet resultSet = statement.executeQuery()){
-                if (resultSet.next()){
-                    return true;
-                }
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next();
             }
-        } catch (SQLException e){
-            throw new RuntimeException("Lỗi Check ID " + e.getMessage());
+        } catch (SQLException e) {
+            throw new RuntimeException("Lỗi Check ID: " + e.getMessage());
         }
-        return false;
     }
 }
